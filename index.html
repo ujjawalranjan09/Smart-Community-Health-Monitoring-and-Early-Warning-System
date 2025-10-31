@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Community Health Monitoring Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Calm Health-Tech (Blue, Green, Slate, Red/Orange for Alerts) -->
+    <!-- Application Structure Plan: A single-page dashboard with tabbed navigation ('Overview', 'Health Data', 'Water Quality', 'Reports & Alerts'). 'Overview' contains main KPIs, the interactive hotspot map, and high-priority alerts. 'Health Data' and 'Water Quality' contain filterable charts for detailed analysis. 'Reports' shows the mock data feed. This structure is chosen to mirror the 'Expected Solution' and provide a clear workflow for a health official, from high-level awareness (Overview) to deep-dive analysis (Data Tabs) and action (Alerts). -->
+    <!-- Visualization & Content Choices: Report Info: Outbreak Trends -> Goal: Show change -> Viz: Line Chart (Chart.js) -> Interaction: Filter by date/disease. Report Info: Hotspots -> Goal: Organize/Inform -> Viz: CSS Grid Map -> Interaction: Click cell for modal with details. Report Info: ASHA/Community Reports -> Goal: Inform -> Viz: Styled HTML list/feed -> Interaction: Click for modal. Report Info: Disease Prevalence -> Goal: Compare parts of a whole -> Viz: Donut Chart (Chart.js) -> Interaction: Hover for tooltip. NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: auto;
+            height: 400px;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans">
+    <div id="app" class="container mx-auto p-4">
+        <header class="mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl md:text-3xl font-bold text-slate-800">Smart Community Health Monitoring</h1>
+                <p class="text-sm text-slate-600 hidden md:block">for Rural Northeast India</p>
+            </div>
+            <div class="md:hidden">
+                <button id="menu-btn" class="p-2 text-2xl font-bold">
+                    &#9776;
+                </button>
+            </div>
+        </header>
+
+        <nav id="mobile-menu" class="hidden md:hidden flex-col mb-4">
+             <button data-tab="overview" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Overview</button>
+             <button data-tab="epidemiology" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Epidemiology</button>
+             <button data-tab="environmental" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Environmental</button>
+             <button data-tab="reports" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Reports & Alerts</button>
+        </nav>
+
+        <nav class="hidden md:flex border-b border-slate-200 mb-6">
+            <button data-tab="overview" class="tab-btn px-4 py-2 text-slate-800 border-b-2 border-blue-500 font-semibold">Overview</button>
+            <button data-tab="epidemiology" class="tab-btn px-4 py-2 text-slate-500">Epidemiology</button>
+            <button data-tab="environmental" class="tab-btn px-4 py-2 text-slate-500">Environmental</button>
+            <button data-tab="reports" class="tab-btn px-4 py-2 text-slate-500">Reports & Alerts</button>
+        </nav>
+
+        <div id="filter-controls" class="mb-6 flex flex-wrap gap-4 items-center">
+             <select id="district-filter" class="p-2 border rounded-md bg-white shadow-sm">
+                <option value="all">All Districts</option>
+             </select>
+             <select id="village-filter" class="p-2 border rounded-md bg-white shadow-sm">
+                <option value="all">All Villages</option>
+             </select>
+             <select id="disease-filter" class="p-2 border rounded-md bg-white shadow-sm">
+                <option value="all">All Diseases</option>
+                <option value="Diarrhea">Diarrhea</option>
+                <option value="Cholera">Cholera</option>
+                <option value="Typhoid">Typhoid</option>
+             </select>
+             <div id="time-range-filter" class="flex rounded-md shadow-sm">
+                <button data-range="30" class="time-range-btn p-2 border bg-white text-sm">30 Days</button>
+                <button data-range="60" class="time-range-btn p-2 border bg-white text-sm">60 Days</button>
+                <button data-range="90" class="time-range-btn p-2 border bg-blue-500 text-white text-sm">90 Days</button>
+             </div>
+        </div>
+
+        <main id="content">
+            <section id="overview" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <div id="kpi-container" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                        <!-- KPIs will be rendered here -->
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h2 class="text-xl font-bold text-slate-700 mb-2">Health Hotspot Map</h2>
+                        <p class="text-slate-600 mb-4 text-sm">Each cell represents a village. Color indicates the current risk level. Click a village for more details.</p>
+                        <div id="hotspot-map" class="grid grid-cols-6 gap-2">
+                            <!-- Hotspot map will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 bg-white p-4 rounded-lg shadow">
+                    <h2 class="text-xl font-bold text-slate-700 mb-4">Real-time Alerts</h2>
+                    <div id="alerts-container" class="space-y-3">
+                        <!-- Alerts will be rendered here -->
+                    </div>
+                </div>
+            </section>
+            <section id="epidemiology" class="tab-content hidden space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Epidemiological Data</h2>
+                    <p class="text-slate-600 max-w-3xl">This section provides a detailed analysis of reported health cases. Use the filters above to narrow down the data by district, disease, or time range. The charts below visualize trends over time and the prevalence of different diseases, helping to identify patterns and potential outbreaks.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="font-bold text-lg text-slate-700 mb-2">Case Trends Over Time</h3>
+                        <div class="chart-container">
+                            <canvas id="trends-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                         <h3 class="font-bold text-lg text-slate-700 mb-2">Disease Prevalence</h3>
+                        <div class="chart-container" style="max-height: 360px; margin-top: 2rem;">
+                            <canvas id="prevalence-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section id="environmental" class="tab-content hidden space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Environmental & Health Correlation</h2>
+                    <p class="text-slate-600 max-w-3xl">This section visualizes the relationship between environmental factors and health outcomes. The chart below overlays daily water quality index (WQI) readings with new case reports, helping to demonstrate the causal link between water contamination and disease outbreaks as identified by the system.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold text-lg text-slate-700 mb-2">Water Quality vs. New Cases</h3>
+                    <div class="chart-container">
+                        <canvas id="correlation-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+            <section id="reports" class="tab-content hidden space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Field Reports Feed</h2>
+                    <p class="text-slate-600 max-w-3xl">This is a live feed of qualitative data submitted by ASHA workers and community members via SMS and mobile app. These reports provide valuable on-the-ground context that complements the quantitative data from health clinics and sensors.</p>
+                </div>
+                <div id="reports-container" class="space-y-4">
+                    <!-- Reports will be rendered here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal -->
+        <div id="village-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-lg mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="modal-title" class="text-2xl font-bold text-slate-800">Village Details</h2>
+                    <button id="modal-close-btn" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+                </div>
+                <div id="modal-content" class="space-y-4">
+                     <p id="modal-risk-level" class="text-lg font-semibold"></p>
+                     <div class="chart-container" style="height: 150px; max-height: 150px;">
+                        <canvas id="modal-sparkline"></canvas>
+                     </div>
+                     <p id="modal-water-quality" class="text-slate-700"></p>
+                     <button class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">View Detailed Village Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let modalChart = null;
+        let trendsChart = null;
+        let prevalenceChart = null;
+        let correlationChart = null;
+
+        const DB = {
+            districts: [],
+            reports: []
+        };
+
+        const DISTRICT_NAMES = ["Kamrup", "Cachar", "Dibrugarh"];
+        const VILLAGE_NAMES = [
+            "Amingaon", "Sonapur", "Boko", "Chaygaon", // Kamrup
+            "Silchar", "Lakhipur", "Sonai", "Udharbond", // Cachar
+            "Tinsukia", "Duliajan", "Naharkatia", "Moran"  // Dibrugarh
+        ];
+        const DISEASES = ["Diarrhea", "Cholera", "Typhoid"];
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function generateMockData() {
+            let villageIdCounter = 0;
+            DISTRICT_NAMES.forEach((distName, distIndex) => {
+                const district = {
+                    id: distIndex,
+                    name: distName,
+                    villages: []
+                };
+
+                for (let i = 0; i < 4; i++) {
+                    const villageName = VILLAGE_NAMES[distIndex * 4 + i];
+                    const village = {
+                        id: villageIdCounter++,
+                        name: villageName,
+                        districtId: distIndex,
+                        population: 500 + Math.floor(Math.random() * 1500),
+                        healthData: [],
+                        waterData: []
+                    };
+
+                    let contaminationEvent = null;
+                    if (Math.random() < 0.3) { // 30% chance of a contamination event
+                        contaminationEvent = {
+                            startDay: 30 + Math.floor(Math.random() * 30), // Event between day 30 and 60
+                            duration: 3 + Math.floor(Math.random() * 5),
+                            impactLag: 5 + Math.floor(Math.random() * 3) // 5-7 days
+                        };
+                        contaminationEvent.spikeDay = contaminationEvent.startDay + contaminationEvent.impactLag;
+                    }
+
+                    for (let day = 0; day < 90; day++) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - (89 - day));
+                        const dateString = formatDate(date);
+
+                        let dailyCases = { Diarrhea: 0, Cholera: 0, Typhoid: 0 };
+                        let wqi = 75 + Math.random() * 15; // Normal WQI
+                        let ecoli = 10 + Math.random() * 20; // Normal E.coli
+
+                        // Implement Causal Link
+                        if (contaminationEvent && day >= contaminationEvent.startDay && day < contaminationEvent.startDay + contaminationEvent.duration) {
+                             wqi = 30 + Math.random() * 20; // Poor WQI
+                             ecoli = 150 + Math.random() * 50; // High E.coli
+                        } else if (contaminationEvent && day >= contaminationEvent.spikeDay && day < contaminationEvent.spikeDay + contaminationEvent.duration) {
+                            dailyCases.Diarrhea = 5 + Math.floor(Math.random() * 10);
+                            dailyCases.Cholera = Math.random() > 0.6 ? 2 + Math.floor(Math.random() * 5) : 0;
+                        } else {
+                            dailyCases.Diarrhea = Math.floor(Math.random() * 3);
+                            dailyCases.Cholera = Math.random() > 0.95 ? 1 : 0;
+                            dailyCases.Typhoid = Math.random() > 0.98 ? 1 : 0;
+                        }
+
+                        village.healthData.push({ date: dateString, cases: dailyCases });
+                        village.waterData.push({ date: dateString, wqi: wqi, ecoli: ecoli });
+                    }
+                    district.villages.push(village);
+                }
+                DB.districts.push(district);
+            });
+
+            // Generate mock reports
+            for(let i=0; i<30; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - Math.floor(Math.random() * 30));
+                const village = DB.districts[Math.floor(Math.random() * DB.districts.length)].villages[Math.floor(Math.random() * 4)];
+                const type = Math.random() > 0.3 ? "ASHA Report" : "Community Report";
+                let reportText = "";
+                if(type === "ASHA Report"){
+                    reportText = `${village.name}: ${Math.ceil(Math.random()*3)} new cases of acute diarrhea reported via SMS.`;
+                } else {
+                    reportText = `${village.name}: Water pump #${Math.ceil(Math.random()*3)} appears cloudy.`
+                }
+                DB.reports.push({
+                    date: formatDate(date),
+                    village: village.name,
+                    type: type,
+                    text: reportText
+                });
+            }
+            DB.reports.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+
+        const AppState = {
+            filters: {
+                district: 'all',
+                village: 'all',
+                disease: 'all',
+                timeRange: 90
+            },
+
+            riskScores: new Map()
+        };
+
+        function isMonsoon() {
+            // For simulation, let's say the last 30 days of our 90-day data period are "monsoon"
+            const today = new Date();
+            const sixtyDaysAgo = new Date();
+            sixtyDaysAgo.setDate(today.getDate() - 60);
+            // This is a simplification; a real app would have a more robust date check
+            return true;
+        }
+
+        function calculateRiskScore(village) {
+            const healthData = village.healthData.slice(-30); // last 30 days
+            const waterData = village.waterData.slice(-3); // last 3 days
+
+            // Factor Q: Recent Case Spike
+            const last7DaysCases = healthData.slice(-7).reduce((sum, day) => sum + day.cases.Diarrhea + day.cases.Cholera, 0);
+            const baselineCases = healthData.slice(0, 23).reduce((sum, day) => sum + day.cases.Diarrhea + day.cases.Cholera, 0) / 23;
+            const caseSpike = (last7DaysCases / 7) > (baselineCases * 2);
+
+            // Factor L: Environmental Trigger
+            const poorWaterQuality = waterData.some(d => d.wqi < 50);
+
+            // Factor U: Contextual (Monsoon Season)
+            const inMonsoonSeason = isMonsoon();
+
+            let score = 0;
+            if (caseSpike) score += 3.0;
+            if (poorWaterQuality) score += 2.0;
+            if (inMonsoonSeason) score += 1.5;
+
+            let level = 'Low';
+            if (score > 5.5) level = 'High';
+            else if (score > 4.5) level = 'Medium';
+            else if (score > 3.0) level = 'Watch';
+
+            return { score, level };
+        }
+
+        function setupTabNavigation() {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+            const mobileTabs = document.querySelectorAll('.tab-btn-mobile');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuBtn = document.getElementById('menu-btn');
+
+            const switchTab = (targetTab) => {
+                tabs.forEach(t => {
+                    t.classList.remove('border-blue-500', 'font-semibold', 'text-slate-800');
+                    t.classList.add('text-slate-500');
+                });
+
+                const desktopTab = document.querySelector(`.tab-btn[data-tab="${targetTab.dataset.tab}"]`);
+                if (desktopTab) {
+                    desktopTab.classList.add('border-blue-500', 'font-semibold', 'text-slate-800');
+                    desktopTab.classList.remove('text-slate-500');
+                }
+
+                contents.forEach(content => {
+                    content.classList.add('hidden');
+                    if (content.id === targetTab.dataset.tab) {
+                        content.classList.remove('hidden');
+                    }
+                });
+            };
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab));
+            });
+
+            mobileTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchTab(tab);
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
+        function renderKPIs() {
+            const kpiContainer = document.getElementById('kpi-container');
+            const filteredVillages = getFilteredVillages();
+            const allVillages = DB.districts.flatMap(d => d.villages);
+
+            if (filteredVillages.length === 0) {
+                kpiContainer.innerHTML = '<p class="text-slate-500 col-span-3">No data for selected filters.</p>';
+                return;
+            }
+
+            // 1. Total Active Cases
+            const currentCases = filteredVillages.reduce((sum, v) => sum + v.healthData.slice(-14).reduce((s, d) => s + d.cases.Diarrhea + d.cases.Cholera, 0), 0);
+            const previousCases = filteredVillages.reduce((sum, v) => sum + v.healthData.slice(-28, -14).reduce((s, d) => s + d.cases.Diarrhea + d.cases.Cholera, 0), 0);
+            const caseDelta = previousCases === 0 ? (currentCases > 0 ? 100 : 0) : ((currentCases - previousCases) / previousCases) * 100;
+            const caseArrow = caseDelta >= 0 ? '↑' : '↓';
+            const caseColor = caseDelta >= 0 ? 'text-red-500' : 'text-green-500';
+
+            // 2. Villages at High Risk
+            const highRiskVillages = filteredVillages.filter(v => AppState.riskScores.get(v.id).level === 'High').length;
+
+            // 3. Average Water Quality
+            const latestWQI = filteredVillages.reduce((sum, v) => sum + v.waterData[v.waterData.length - 1].wqi, 0) / filteredVillages.length;
+            const wqiStatus = latestWQI > 75 ? 'Good' : latestWQI > 50 ? 'Moderate' : 'Poor';
+            const wqiColor = latestWQI > 75 ? 'text-green-500' : latestWQI > 50 ? 'text-yellow-500' : 'text-red-500';
+
+            kpiContainer.innerHTML = `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-sm font-semibold text-slate-500">Total Active Cases (14d)</h3>
+                    <p class="text-3xl font-bold text-slate-800">${currentCases}</p>
+                    <p class="text-sm ${caseColor}">${caseArrow} ${caseDelta.toFixed(1)}% vs previous 14d</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-sm font-semibold text-slate-500">Villages at High Risk</h3>
+                    <p class="text-3xl font-bold text-slate-800">${highRiskVillages}</p>
+                    <p class="text-sm text-slate-500">out of ${filteredVillages.length} total</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-sm font-semibold text-slate-500">Avg. Water Quality (WQI)</h3>
+                    <p class="text-3xl font-bold text-slate-800">${latestWQI.toFixed(1)} <span class="text-lg ${wqiColor}">${wqiStatus}</span></p>
+                    <p class="text-sm text-slate-500">Latest sensor readings</p>
+                </div>
+            `;
+        }
+
+        function renderHotspotMap() {
+            const mapContainer = document.getElementById('hotspot-map');
+            mapContainer.innerHTML = '';
+            const villagesToRender = getFilteredVillages();
+            const allVillages = DB.districts.flatMap(d => d.villages);
+
+
+            villagesToRender.forEach(village => {
+                 const risk = AppState.riskScores.get(village.id);
+                 let bgColor = 'bg-slate-200';
+                 if (risk.level === 'High') bgColor = 'bg-red-500';
+                 else if (risk.level === 'Medium') bgColor = 'bg-yellow-400';
+                 else if (risk.level === 'Watch') bgColor = 'bg-green-400';
+
+                 const cell = document.createElement('div');
+                 cell.className = `h-10 ${bgColor} rounded flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80`;
+                 cell.textContent = village.name.substring(0,3);
+                 cell.title = `${village.name} (Risk: ${risk.level})`;
+                 cell.dataset.villageId = village.id;
+                 mapContainer.appendChild(cell);
+            });
+
+            mapContainer.addEventListener('click', (e) => {
+                if(e.target.dataset.villageId) {
+                    const villageId = parseInt(e.target.dataset.villageId, 10);
+                    const village = allVillages.find(v => v.id === villageId); // Use allVillages to find
+                    showVillageModal(village);
+                }
+            });
+        }
+
+        function renderAlerts() {
+            const alertsContainer = document.getElementById('alerts-container');
+            const filteredVillages = getFilteredVillages();
+            const highRiskAlerts = filteredVillages
+                .map(v => ({ village: v, risk: AppState.riskScores.get(v.id) }))
+                .filter(item => item.risk.level === 'High' || item.risk.level === 'Medium')
+                .sort((a, b) => b.risk.score - a.risk.score);
+
+            if (highRiskAlerts.length === 0) {
+                alertsContainer.innerHTML = '<p class="text-slate-500">No high-priority alerts for this selection.</p>';
+                return;
+            }
+
+            alertsContainer.innerHTML = highRiskAlerts.map(item => {
+                const icon = item.risk.level === 'High' ? '⚠️' : '🔔';
+                const color = item.risk.level === 'High' ? 'border-red-500' : 'border-yellow-500';
+                return `
+                    <div class="border-l-4 ${color} p-3 bg-slate-100 rounded-r-lg">
+                        <p class="font-bold text-slate-800">${icon} ${item.village.name}</p>
+                        <p class="text-sm text-slate-600">Risk level: ${item.risk.level} (Score: ${item.risk.score.toFixed(1)})</p>
+                        <p class="text-xs text-slate-500 mt-1">Potential outbreak detected. Immediate verification recommended.</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getFilteredVillages() {
+            let villages = DB.districts.flatMap(d => d.villages);
+            const districtId = AppState.filters.district;
+            const villageId = AppState.filters.village;
+
+            if (districtId !== 'all') {
+                villages = villages.filter(v => v.districtId === parseInt(districtId, 10));
+            }
+            if (villageId !== 'all') {
+                villages = villages.filter(v => v.id === parseInt(villageId, 10));
+            }
+            return villages;
+        }
+
+        function renderChartsAndReports() {
+            const filteredVillages = getFilteredVillages();
+            if (filteredVillages.length === 0) return;
+
+            const timeRange = AppState.filters.timeRange;
+            const disease = AppState.filters.disease;
+
+            // 1. Trends Chart
+            const trendsCtx = document.getElementById('trends-chart').getContext('2d');
+            const trendsLabels = filteredVillages[0].healthData.slice(-timeRange).map(d => d.date);
+
+            const diseasesToShow = disease === 'all' ? DISEASES : [disease];
+            const trendsDatasets = diseasesToShow.map(d => {
+                const color = d === 'Diarrhea' ? '#3b82f6' : d === 'Cholera' ? '#ef4444' : '#f97316';
+                return {
+                    label: d,
+                    data: trendsLabels.map((date, i) => filteredVillages.reduce((sum, v) => sum + v.healthData[v.healthData.length - timeRange + i].cases[d], 0)),
+                    borderColor: color,
+                    tension: 0.1,
+                    fill: false
+                };
+            });
+
+            if (trendsChart) trendsChart.destroy();
+            trendsChart = new Chart(trendsCtx, {
+                type: 'line',
+                data: { labels: trendsLabels, datasets: trendsDatasets },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 2. Prevalence Chart
+            const prevalenceCtx = document.getElementById('prevalence-chart').getContext('2d');
+            const totalCasesByDisease = DISEASES.map(d =>
+                filteredVillages.reduce((sum, v) => sum + v.healthData.slice(-timeRange).reduce((s, day) => s + day.cases[d], 0), 0)
+            );
+
+            if(prevalenceChart) prevalenceChart.destroy();
+            prevalenceChart = new Chart(prevalenceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: DISEASES,
+                    datasets: [{
+                        data: totalCasesByDisease,
+                        backgroundColor: ['#3b82f6', '#ef4444', '#f97316']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 3. Correlation Chart
+            const correlationCtx = document.getElementById('correlation-chart').getContext('2d');
+            const correlationLabels = filteredVillages[0].waterData.slice(-timeRange).map(d => d.date);
+            const correlationWQI = correlationLabels.map((date, i) => filteredVillages.reduce((sum, v) => sum + v.waterData[v.waterData.length - timeRange + i].wqi, 0) / filteredVillages.length);
+            const correlationCases = correlationLabels.map((date, i) => filteredVillages.reduce((sum, v) => sum + v.healthData[v.healthData.length - timeRange + i].cases.Diarrhea, 0));
+            if(correlationChart) correlationChart.destroy();
+            correlationChart = new Chart(correlationCtx, {
+                type: 'bar',
+                data: {
+                    labels: correlationLabels,
+                    datasets: [
+                        { type: 'line', label: 'Avg. WQI', yAxisID: 'y1', data: correlationWQI, borderColor: '#10b981', tension: 0.1, fill: false },
+                        { type: 'bar', label: 'New Diarrhea Cases', yAxisID: 'y', data: correlationCases, backgroundColor: '#a5b4fc' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } } } }
+            });
+
+            // 4. Reports Feed
+            const reportsContainer = document.getElementById('reports-container');
+            reportsContainer.innerHTML = DB.reports.map(report => {
+                const icon = report.type === 'ASHA Report' ? '🩺' : '💧';
+                return `
+                    <div class="p-4 bg-white rounded-lg shadow">
+                        <p class="font-bold text-slate-700">${icon} ${report.type} from ${report.village}</p>
+                        <p class="text-slate-600">"${report.text}"</p>
+                        <p class="text-xs text-slate-400 text-right">${report.date}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderDashboard() {
+            DB.districts.forEach(district => {
+                district.villages.forEach(village => {
+                    const risk = calculateRiskScore(village);
+                    AppState.riskScores.set(village.id, risk);
+                });
+            });
+
+            renderKPIs();
+            renderHotspotMap();
+            renderAlerts();
+            renderChartsAndReports();
+        }
+
+        function showVillageModal(village) {
+            const modal = document.getElementById('village-modal');
+            const title = document.getElementById('modal-title');
+            const riskLevel = document.getElementById('modal-risk-level');
+            const waterQuality = document.getElementById('modal-water-quality');
+            const risk = AppState.riskScores.get(village.id);
+
+            title.textContent = village.name;
+            riskLevel.textContent = `Risk Level: ${risk.level}`;
+            const latestWaterData = village.waterData[village.waterData.length - 1];
+            waterQuality.textContent = `Latest Water Quality (WQI): ${latestWaterData.wqi.toFixed(1)} on ${latestWaterData.date}`;
+
+            const sparklineCtx = document.getElementById('modal-sparkline').getContext('2d');
+            const healthDataLast14Days = village.healthData.slice(-14);
+
+            if (modalChart) {
+                modalChart.destroy();
+            }
+
+            modalChart = new Chart(sparklineCtx, {
+                type: 'line',
+                data: {
+                    labels: healthDataLast14Days.map(d => d.date.substring(5)), // "MM-DD"
+                    datasets: [{
+                        label: 'Total Cases',
+                        data: healthDataLast14Days.map(d => d.cases.Diarrhea + d.cases.Cholera + d.cases.Typhoid),
+                        borderColor: 'rgba(59, 130, 246, 0.8)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function updateVillageFilter(districtId) {
+            const villageFilter = document.getElementById('village-filter');
+            villageFilter.innerHTML = '<option value="all">All Villages</option>';
+
+            if (districtId !== 'all') {
+                const district = DB.districts.find(d => d.id === parseInt(districtId, 10));
+                district.villages.forEach(v => {
+                    const option = document.createElement('option');
+                    option.value = v.id;
+                    option.textContent = v.name;
+                    villageFilter.appendChild(option);
+                });
+            }
+        }
+
+        function setupInteractions() {
+            // Modal close
+            document.getElementById('modal-close-btn').addEventListener('click', () => {
+                 document.getElementById('village-modal').classList.add('hidden');
+            });
+            document.getElementById('village-modal').addEventListener('click', (e) => {
+                 if (e.target.id === 'village-modal') {
+                    document.getElementById('village-modal').classList.add('hidden');
+                 }
+            });
+
+            // Filters
+            const districtFilter = document.getElementById('district-filter');
+            DB.districts.forEach(d => {
+                const option = document.createElement('option');
+                option.value = d.id;
+                option.textContent = d.name;
+                districtFilter.appendChild(option);
+            });
+
+            document.getElementById('filter-controls').addEventListener('change', (e) => {
+                if(e.target.id === 'district-filter') {
+                    AppState.filters.district = e.target.value;
+                    AppState.filters.village = 'all'; // Reset village when district changes
+                    updateVillageFilter(e.target.value);
+                }
+                if(e.target.id === 'village-filter') AppState.filters.village = e.target.value;
+                if(e.target.id === 'disease-filter') AppState.filters.disease = e.target.value;
+                renderDashboard();
+            });
+
+            document.getElementById('time-range-filter').addEventListener('click', (e) => {
+                if (e.target.dataset.range) {
+                    AppState.filters.timeRange = parseInt(e.target.dataset.range, 10);
+                    document.querySelectorAll('.time-range-btn').forEach(btn => {
+                        btn.classList.remove('bg-blue-500', 'text-white');
+                        btn.classList.add('bg-white');
+                    });
+                    e.target.classList.add('bg-blue-500', 'text-white');
+                    e.target.classList.remove('bg-white');
+                    renderDashboard();
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            generateMockData();
+            setupTabNavigation();
+            renderDashboard();
+            setupInteractions();
+        });
+    </script>
+</body>
+</html>
