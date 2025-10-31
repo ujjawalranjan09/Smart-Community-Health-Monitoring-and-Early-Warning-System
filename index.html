@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Community Health Monitoring Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chosen Palette: Calm Health-Tech (Blue, Green, Slate, Red/Orange for Alerts) -->
     <!-- Application Structure Plan: A single-page dashboard with tabbed navigation ('Overview', 'Health Data', 'Water Quality', 'Reports & Alerts'). 'Overview' contains main KPIs, the interactive hotspot map, and high-priority alerts. 'Health Data' and 'Water Quality' contain filterable charts for detailed analysis. 'Reports' shows the mock data feed. This structure is chosen to mirror the 'Expected Solution' and provide a clear workflow for a health official, from high-level awareness (Overview) to deep-dive analysis (Data Tabs) and action (Alerts). -->
@@ -21,111 +26,116 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 font-sans">
+<body class="bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-200">
     <div id="app" class="container mx-auto p-4">
-        <header class="mb-6 flex justify-between items-center">
+        <header class="mb-6 flex justify-between items-center p-4 rounded-lg bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 shadow-md">
             <div>
-                <h1 class="text-xl md:text-3xl font-bold text-slate-800">Smart Community Health Monitoring</h1>
-                <p class="text-sm text-slate-600 hidden md:block">for Rural Northeast India</p>
+                <h1 class="text-xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">Smart Community Health Monitoring</h1>
+                <p class="text-sm text-slate-600 dark:text-slate-400 hidden md:block">for Rural Northeast India</p>
             </div>
-            <div class="md:hidden">
-                <button id="menu-btn" class="p-2 text-2xl font-bold">
-                    &#9776;
+            <div class="flex items-center gap-4">
+                <button id="theme-toggle" class="p-2 text-2xl">
+                    ☀️
                 </button>
+                <div class="md:hidden">
+                    <button id="menu-btn" class="p-2 text-2xl font-bold">
+                        &#9776;
+                    </button>
+                </div>
             </div>
         </header>
 
-        <nav id="mobile-menu" class="hidden md:hidden flex-col mb-4">
-             <button data-tab="overview" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Overview</button>
-             <button data-tab="epidemiology" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Epidemiology</button>
-             <button data-tab="environmental" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Environmental</button>
-             <button data-tab="reports" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100">Reports & Alerts</button>
+        <nav id="mobile-menu" class="hidden md:hidden flex-col mb-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2">
+             <button data-tab="overview" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Overview</button>
+             <button data-tab="epidemiology" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Epidemiology</button>
+             <button data-tab="environmental" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Environmental</button>
+             <button data-tab="reports" class="tab-btn-mobile w-full text-left p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Reports & Alerts</button>
         </nav>
 
-        <nav class="hidden md:flex border-b border-slate-200 mb-6">
-            <button data-tab="overview" class="tab-btn px-4 py-2 text-slate-800 border-b-2 border-blue-500 font-semibold">Overview</button>
-            <button data-tab="epidemiology" class="tab-btn px-4 py-2 text-slate-500">Epidemiology</button>
-            <button data-tab="environmental" class="tab-btn px-4 py-2 text-slate-500">Environmental</button>
-            <button data-tab="reports" class="tab-btn px-4 py-2 text-slate-500">Reports & Alerts</button>
+        <nav class="hidden md:flex border-b border-slate-200 dark:border-slate-700 mb-6">
+            <button data-tab="overview" class="tab-btn px-4 py-2 text-slate-800 dark:text-slate-200 border-b-2 border-blue-500 font-semibold">Overview</button>
+            <button data-tab="epidemiology" class="tab-btn px-4 py-2 text-slate-500 dark:text-slate-400">Epidemiology</button>
+            <button data-tab="environmental" class="tab-btn px-4 py-2 text-slate-500 dark:text-slate-400">Environmental</button>
+            <button data-tab="reports" class="tab-btn px-4 py-2 text-slate-500 dark:text-slate-400">Reports & Alerts</button>
         </nav>
 
         <div id="filter-controls" class="mb-6 flex flex-wrap gap-4 items-center">
-             <select id="district-filter" class="p-2 border rounded-md bg-white shadow-sm">
+             <select id="district-filter" class="p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-slate-200">
                 <option value="all">All Districts</option>
              </select>
-             <select id="village-filter" class="p-2 border rounded-md bg-white shadow-sm">
+             <select id="village-filter" class="p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-slate-200">
                 <option value="all">All Villages</option>
              </select>
-             <select id="disease-filter" class="p-2 border rounded-md bg-white shadow-sm">
+             <select id="disease-filter" class="p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-slate-200">
                 <option value="all">All Diseases</option>
                 <option value="Diarrhea">Diarrhea</option>
                 <option value="Cholera">Cholera</option>
                 <option value="Typhoid">Typhoid</option>
              </select>
              <div id="time-range-filter" class="flex rounded-md shadow-sm">
-                <button data-range="30" class="time-range-btn p-2 border bg-white text-sm">30 Days</button>
-                <button data-range="60" class="time-range-btn p-2 border bg-white text-sm">60 Days</button>
-                <button data-range="90" class="time-range-btn p-2 border bg-blue-500 text-white text-sm">90 Days</button>
+                <button data-range="30" class="time-range-btn p-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">30 Days</button>
+                <button data-range="60" class="time-range-btn p-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">60 Days</button>
+                <button data-range="90" class="time-range-btn p-2 border border-slate-300 dark:border-slate-600 bg-blue-500 text-white dark:text-slate-200 text-sm">90 Days</button>
              </div>
         </div>
 
         <main id="content">
-            <section id="overview" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section id="overview" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-500">
                 <div class="lg:col-span-2">
                     <div id="kpi-container" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                         <!-- KPIs will be rendered here -->
                     </div>
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <h2 class="text-xl font-bold text-slate-700 mb-2">Health Hotspot Map</h2>
-                        <p class="text-slate-600 mb-4 text-sm">Each cell represents a village. Color indicates the current risk level. Click a village for more details.</p>
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl">
+                        <h2 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Health Hotspot Map</h2>
+                        <p class="text-slate-600 dark:text-slate-400 mb-4 text-sm">Each cell represents a village. Color indicates the current risk level. Click a village for more details.</p>
                         <div id="hotspot-map" class="grid grid-cols-6 gap-2">
                             <!-- Hotspot map will be rendered here -->
                         </div>
                     </div>
                 </div>
-                <div class="lg:col-span-1 bg-white p-4 rounded-lg shadow">
-                    <h2 class="text-xl font-bold text-slate-700 mb-4">Real-time Alerts</h2>
+                <div class="lg:col-span-1 bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl">
+                    <h2 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Real-time Alerts</h2>
                     <div id="alerts-container" class="space-y-3">
                         <!-- Alerts will be rendered here -->
                     </div>
                 </div>
             </section>
-            <section id="epidemiology" class="tab-content hidden space-y-6">
+            <section id="epidemiology" class="tab-content hidden space-y-6 transition-opacity duration-500">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Epidemiological Data</h2>
-                    <p class="text-slate-600 max-w-3xl">This section provides a detailed analysis of reported health cases. Use the filters above to narrow down the data by district, disease, or time range. The charts below visualize trends over time and the prevalence of different diseases, helping to identify patterns and potential outbreaks.</p>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Epidemiological Data</h2>
+                    <p class="text-slate-600 dark:text-slate-400 max-w-3xl">This section provides a detailed analysis of reported health cases. Use the filters above to narrow down the data by district, disease, or time range. The charts below visualize trends over time and the prevalence of different diseases, helping to identify patterns and potential outbreaks.</p>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <h3 class="font-bold text-lg text-slate-700 mb-2">Case Trends Over Time</h3>
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl">
+                        <h3 class="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Case Trends Over Time</h3>
                         <div class="chart-container">
                             <canvas id="trends-chart"></canvas>
                         </div>
                     </div>
-                    <div class="bg-white p-4 rounded-lg shadow">
-                         <h3 class="font-bold text-lg text-slate-700 mb-2">Disease Prevalence</h3>
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl">
+                         <h3 class="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Disease Prevalence</h3>
                         <div class="chart-container" style="max-height: 360px; margin-top: 2rem;">
                             <canvas id="prevalence-chart"></canvas>
                         </div>
                     </div>
                 </div>
             </section>
-            <section id="environmental" class="tab-content hidden space-y-6">
+            <section id="environmental" class="tab-content hidden space-y-6 transition-opacity duration-500">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Environmental & Health Correlation</h2>
-                    <p class="text-slate-600 max-w-3xl">This section visualizes the relationship between environmental factors and health outcomes. The chart below overlays daily water quality index (WQI) readings with new case reports, helping to demonstrate the causal link between water contamination and disease outbreaks as identified by the system.</p>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Environmental & Health Correlation</h2>
+                    <p class="text-slate-600 dark:text-slate-400 max-w-3xl">This section visualizes the relationship between environmental factors and health outcomes. The chart below overlays daily water quality index (WQI) readings with new case reports, helping to demonstrate the causal link between water contamination and disease outbreaks as identified by the system.</p>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="font-bold text-lg text-slate-700 mb-2">Water Quality vs. New Cases</h3>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl">
+                    <h3 class="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Water Quality vs. New Cases</h3>
                     <div class="chart-container">
                         <canvas id="correlation-chart"></canvas>
                     </div>
                 </div>
             </section>
-            <section id="reports" class="tab-content hidden space-y-6">
+            <section id="reports" class="tab-content hidden space-y-6 transition-opacity duration-500">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Field Reports Feed</h2>
-                    <p class="text-slate-600 max-w-3xl">This is a live feed of qualitative data submitted by ASHA workers and community members via SMS and mobile app. These reports provide valuable on-the-ground context that complements the quantitative data from health clinics and sensors.</p>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Field Reports Feed</h2>
+                    <p class="text-slate-600 dark:text-slate-400 max-w-3xl">This is a live feed of qualitative data submitted by ASHA workers and community members via SMS and mobile app. These reports provide valuable on-the-ground context that complements the quantitative data from health clinics and sensors.</p>
                 </div>
                 <div id="reports-container" class="space-y-4">
                     <!-- Reports will be rendered here -->
@@ -134,19 +144,19 @@
         </main>
 
         <!-- Modal -->
-        <div id="village-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-            <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-lg mx-4">
+        <div id="village-modal" class="fixed inset-0 bg-black bg-opacity-60 dark:bg-opacity-70 z-50 hidden flex items-center justify-center">
+            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-lg mx-4">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 id="modal-title" class="text-2xl font-bold text-slate-800">Village Details</h2>
-                    <button id="modal-close-btn" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+                    <h2 id="modal-title" class="text-2xl font-bold text-slate-800 dark:text-slate-100">Village Details</h2>
+                    <button id="modal-close-btn" class="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 text-2xl">&times;</button>
                 </div>
                 <div id="modal-content" class="space-y-4">
                      <p id="modal-risk-level" class="text-lg font-semibold"></p>
                      <div class="chart-container" style="height: 150px; max-height: 150px;">
                         <canvas id="modal-sparkline"></canvas>
                      </div>
-                     <p id="modal-water-quality" class="text-slate-700"></p>
-                     <button class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">View Detailed Village Report</button>
+                     <p id="modal-water-quality" class="text-slate-700 dark:text-slate-300"></p>
+                     <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">View Detailed Village Report</button>
                 </div>
             </div>
         </div>
@@ -314,20 +324,21 @@
 
             const switchTab = (targetTab) => {
                 tabs.forEach(t => {
-                    t.classList.remove('border-blue-500', 'font-semibold', 'text-slate-800');
-                    t.classList.add('text-slate-500');
+                    t.classList.remove('border-blue-500', 'font-semibold', 'text-slate-800', 'dark:text-slate-200');
+                    t.classList.add('text-slate-500', 'dark:text-slate-400');
                 });
 
                 const desktopTab = document.querySelector(`.tab-btn[data-tab="${targetTab.dataset.tab}"]`);
                 if (desktopTab) {
-                    desktopTab.classList.add('border-blue-500', 'font-semibold', 'text-slate-800');
-                    desktopTab.classList.remove('text-slate-500');
+                    desktopTab.classList.add('border-blue-500', 'font-semibold', 'text-slate-800', 'dark:text-slate-200');
+                    desktopTab.classList.remove('text-slate-500', 'dark:text-slate-400');
                 }
 
                 contents.forEach(content => {
-                    content.classList.add('hidden');
+                    content.classList.add('opacity-0', 'hidden');
                     if (content.id === targetTab.dataset.tab) {
                         content.classList.remove('hidden');
+                        setTimeout(() => content.classList.remove('opacity-0'), 50);
                     }
                 });
             };
@@ -354,7 +365,7 @@
             const allVillages = DB.districts.flatMap(d => d.villages);
 
             if (filteredVillages.length === 0) {
-                kpiContainer.innerHTML = '<p class="text-slate-500 col-span-3">No data for selected filters.</p>';
+                kpiContainer.innerHTML = '<p class="text-slate-500 dark:text-slate-400 col-span-3">No data for selected filters.</p>';
                 return;
             }
 
@@ -374,20 +385,20 @@
             const wqiColor = latestWQI > 75 ? 'text-green-500' : latestWQI > 50 ? 'text-yellow-500' : 'text-red-500';
 
             kpiContainer.innerHTML = `
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="text-sm font-semibold text-slate-500">Total Active Cases (14d)</h3>
-                    <p class="text-3xl font-bold text-slate-800">${currentCases}</p>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl transition-transform hover:scale-105">
+                    <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400">Total Active Cases (14d)</h3>
+                    <p class="text-3xl font-bold text-slate-800 dark:text-slate-100">${currentCases}</p>
                     <p class="text-sm ${caseColor}">${caseArrow} ${caseDelta.toFixed(1)}% vs previous 14d</p>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="text-sm font-semibold text-slate-500">Villages at High Risk</h3>
-                    <p class="text-3xl font-bold text-slate-800">${highRiskVillages}</p>
-                    <p class="text-sm text-slate-500">out of ${filteredVillages.length} total</p>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl transition-transform hover:scale-105">
+                    <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400">Villages at High Risk</h3>
+                    <p class="text-3xl font-bold text-slate-800 dark:text-slate-100">${highRiskVillages}</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">out of ${filteredVillages.length} total</p>
                 </div>
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="text-sm font-semibold text-slate-500">Avg. Water Quality (WQI)</h3>
-                    <p class="text-3xl font-bold text-slate-800">${latestWQI.toFixed(1)} <span class="text-lg ${wqiColor}">${wqiStatus}</span></p>
-                    <p class="text-sm text-slate-500">Latest sensor readings</p>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xl transition-transform hover:scale-105">
+                    <h3 class="text-sm font-semibold text-slate-500 dark:text-slate-400">Avg. Water Quality (WQI)</h3>
+                    <p class="text-3xl font-bold text-slate-800 dark:text-slate-100">${latestWQI.toFixed(1)} <span class="text-lg ${wqiColor}">${wqiStatus}</span></p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Latest sensor readings</p>
                 </div>
             `;
         }
@@ -401,13 +412,13 @@
 
             villagesToRender.forEach(village => {
                  const risk = AppState.riskScores.get(village.id);
-                 let bgColor = 'bg-slate-200';
+                 let bgColor = 'bg-slate-300 dark:bg-slate-600';
                  if (risk.level === 'High') bgColor = 'bg-red-500';
                  else if (risk.level === 'Medium') bgColor = 'bg-yellow-400';
-                 else if (risk.level === 'Watch') bgColor = 'bg-green-400';
+                 else if (risk.level === 'Watch') bgColor = 'bg-green-500';
 
                  const cell = document.createElement('div');
-                 cell.className = `h-10 ${bgColor} rounded flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80`;
+                 cell.className = `h-10 ${bgColor} rounded flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80 transition-transform hover:scale-110`;
                  cell.textContent = village.name.substring(0,3);
                  cell.title = `${village.name} (Risk: ${risk.level})`;
                  cell.dataset.villageId = village.id;
@@ -432,7 +443,7 @@
                 .sort((a, b) => b.risk.score - a.risk.score);
 
             if (highRiskAlerts.length === 0) {
-                alertsContainer.innerHTML = '<p class="text-slate-500">No high-priority alerts for this selection.</p>';
+                alertsContainer.innerHTML = '<p class="text-slate-500 dark:text-slate-400">No high-priority alerts for this selection.</p>';
                 return;
             }
 
@@ -440,10 +451,10 @@
                 const icon = item.risk.level === 'High' ? '⚠️' : '🔔';
                 const color = item.risk.level === 'High' ? 'border-red-500' : 'border-yellow-500';
                 return `
-                    <div class="border-l-4 ${color} p-3 bg-slate-100 rounded-r-lg">
-                        <p class="font-bold text-slate-800">${icon} ${item.village.name}</p>
-                        <p class="text-sm text-slate-600">Risk level: ${item.risk.level} (Score: ${item.risk.score.toFixed(1)})</p>
-                        <p class="text-xs text-slate-500 mt-1">Potential outbreak detected. Immediate verification recommended.</p>
+                    <div class="border-l-4 ${color} p-3 bg-slate-100 dark:bg-slate-700 rounded-r-lg">
+                        <p class="font-bold text-slate-800 dark:text-slate-200">${icon} ${item.village.name}</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-300">Risk level: ${item.risk.level} (Score: ${item.risk.score.toFixed(1)})</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Potential outbreak detected. Immediate verification recommended.</p>
                     </div>
                 `;
             }).join('');
@@ -469,6 +480,28 @@
 
             const timeRange = AppState.filters.timeRange;
             const disease = AppState.filters.disease;
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const textColor = isDark ? '#e2e8f0' : '#334155';
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                },
+                scales: {
+                    x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true, position: 'left' }
+                },
+                plugins: {
+                    legend: { labels: { color: textColor } }
+                }
+            };
+
+            Chart.defaults.animation.duration = 1000;
+            Chart.defaults.animation.easing = 'easeInOutQuart';
 
             // 1. Trends Chart
             const trendsCtx = document.getElementById('trends-chart').getContext('2d');
@@ -490,7 +523,7 @@
             trendsChart = new Chart(trendsCtx, {
                 type: 'line',
                 data: { labels: trendsLabels, datasets: trendsDatasets },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: chartOptions
             });
 
             // 2. Prevalence Chart
@@ -509,7 +542,7 @@
                         backgroundColor: ['#3b82f6', '#ef4444', '#f97316']
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { ...chartOptions, scales: {} }
             });
 
             // 3. Correlation Chart
@@ -527,7 +560,7 @@
                         { type: 'bar', label: 'New Diarrhea Cases', yAxisID: 'y', data: correlationCases, backgroundColor: '#a5b4fc' }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } } } }
+                options: { ...chartOptions, scales: { ...chartOptions.scales, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: textColor } } } }
             });
 
             // 4. Reports Feed
@@ -535,10 +568,10 @@
             reportsContainer.innerHTML = DB.reports.map(report => {
                 const icon = report.type === 'ASHA Report' ? '🩺' : '💧';
                 return `
-                    <div class="p-4 bg-white rounded-lg shadow">
-                        <p class="font-bold text-slate-700">${icon} ${report.type} from ${report.village}</p>
-                        <p class="text-slate-600">"${report.text}"</p>
-                        <p class="text-xs text-slate-400 text-right">${report.date}</p>
+                    <div class="p-4 bg-white dark:bg-slate-800 rounded-lg shadow-xl">
+                        <p class="font-bold text-slate-700 dark:text-slate-200">${icon} ${report.type} from ${report.village}</p>
+                        <p class="text-slate-600 dark:text-slate-300">"${report.text}"</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 text-right">${report.date}</p>
                     </div>
                 `;
             }).join('');
@@ -617,6 +650,42 @@
             }
         }
 
+        function setupTheme() {
+            const themeToggle = document.getElementById('theme-toggle');
+
+            const applyTheme = (theme) => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    themeToggle.textContent = '🌙';
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    themeToggle.textContent = '☀️';
+                }
+            };
+
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    localStorage.setItem('theme', 'light');
+                    applyTheme('light');
+                } else {
+                    localStorage.setItem('theme', 'dark');
+                    applyTheme('dark');
+                }
+            });
+
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (systemPrefersDark) {
+                applyTheme('dark');
+            } else {
+                applyTheme('light');
+            }
+        }
+
         function setupInteractions() {
             // Modal close
             document.getElementById('modal-close-btn').addEventListener('click', () => {
@@ -653,10 +722,10 @@
                     AppState.filters.timeRange = parseInt(e.target.dataset.range, 10);
                     document.querySelectorAll('.time-range-btn').forEach(btn => {
                         btn.classList.remove('bg-blue-500', 'text-white');
-                        btn.classList.add('bg-white');
+                        btn.classList.add('bg-white', 'dark:bg-slate-800');
                     });
                     e.target.classList.add('bg-blue-500', 'text-white');
-                    e.target.classList.remove('bg-white');
+                    e.target.classList.remove('bg-white', 'dark:bg-slate-800');
                     renderDashboard();
                 }
             });
@@ -664,6 +733,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             generateMockData();
+            setupTheme();
             setupTabNavigation();
             renderDashboard();
             setupInteractions();
